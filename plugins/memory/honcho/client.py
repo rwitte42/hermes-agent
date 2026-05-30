@@ -500,6 +500,13 @@ class HonchoClientConfig:
             else raw.get("sessionPeerPrefix", False)
         )
 
+        # Preserve the effective host overlay for downstream consumers that
+        # still read less-common knobs from cfg.raw (for example cost/cadence
+        # controls in the runtime provider and status CLI). Root config remains
+        # present, with host-specific values winning just like the typed fields.
+        effective_raw = dict(raw)
+        effective_raw.update(host_block)
+
         return cls(
             host=resolved_host,
             workspace_id=workspace,
@@ -614,7 +621,7 @@ class HonchoClientConfig:
             session_strategy=session_strategy,
             session_peer_prefix=session_peer_prefix,
             sessions=raw.get("sessions", {}),
-            raw=raw,
+            raw=effective_raw,
             explicitly_configured=_explicitly_configured,
         )
 
