@@ -105,6 +105,29 @@ class TestHonchoClientConfigAutoEnable:
         assert cfg.api_key == "fallback-key"
         assert cfg.enabled is True  # from_env() sets enabled=True
 
+    def test_raw_preserves_effective_host_overlay(self, tmp_path):
+        """cfg.raw exposes root config plus host-level overrides for consumers."""
+        config_path = tmp_path / "config.json"
+        config_path.write_text(json.dumps({
+            "workspace": "root-workspace",
+            "reasoningLevelCap": "medium",
+            "dialecticMaxChars": 600,
+            "hosts": {
+                "samwise": {
+                    "workspace": "host-workspace",
+                    "reasoningLevelCap": "high",
+                },
+            },
+        }))
+
+        cfg = HonchoClientConfig.from_global_config(host="samwise", config_path=config_path)
+
+        assert cfg.workspace_id == "host-workspace"
+        assert cfg.raw["workspace"] == "host-workspace"
+        assert cfg.raw["reasoningLevelCap"] == "high"
+        assert cfg.raw["dialecticMaxChars"] == 600
+        assert "hosts" in cfg.raw
+
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX mode bits not enforced on Windows")
 def test_save_config_sets_owner_only_permissions(tmp_path, monkeypatch):
